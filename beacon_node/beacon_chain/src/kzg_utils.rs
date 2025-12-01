@@ -313,7 +313,10 @@ pub fn reconstruct_blobs<E: EthSpec>(
     signed_block: &SignedBlindedBeaconBlock<E>,
     spec: &ChainSpec,
 ) -> Result<BlobSidecarList<E>, String> {
-    // The data columns are from the database, so we assume their correctness.
+    // Sort data columns by index to ensure ascending order for KZG operations
+    let mut data_columns = data_columns.to_vec();
+    data_columns.sort_unstable_by_key(|dc| dc.index);
+    
     let first_data_column = data_columns
         .first()
         .ok_or("data_columns should have at least one element".to_string())?;
@@ -331,7 +334,7 @@ pub fn reconstruct_blobs<E: EthSpec>(
         .map(|row_index| {
             let mut cells: Vec<KzgCellRef> = vec![];
             let mut cell_ids: Vec<u64> = vec![];
-            for data_column in data_columns {
+            for data_column in &data_columns {
                 let cell = data_column
                     .column
                     .get(row_index)
